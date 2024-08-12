@@ -48,7 +48,7 @@
     <div class="container">
         <h1>Busca De Driver</h1>
         
-        <form id="lookup-form">
+        <form id="lookup-form" method="POST" enctype="multipart/form-data">
             <label for="file">1. Selecione o arquivo Excel:</label>
             <input type="file" id="file" name="file" accept=".xlsx, .xls" required>
             
@@ -66,7 +66,6 @@
         
         <h2>Resultado:</h2>
         <ul id="result">
-            <!-- Resultados serão inseridos aqui -->
         </ul>
     </div>
     
