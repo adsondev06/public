@@ -4,11 +4,17 @@ const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
+// Verifica se o diretório de upload temporário existe, e o cria se necessário
+const uploadDir = path.join(__dirname, 'tmp/uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Inicializa o servidor Express
 const app = express();
 
 // Configuração do multer para o upload de arquivos
-const upload = multer({ dest: path.join(__dirname, 'tmp/uploads') });
+const upload = multer({ dest: uploadDir });
 
 // Função para realizar a busca PROCV
 function performLookup(filePath, searchValue, searchColumn, returnColumn) {
@@ -36,7 +42,7 @@ function printLabels(results) {
 }
 
 // Endpoint principal para lidar com o upload e a busca
-app.post('/lookup', upload.single('file'), (req, res) => {
+app.post('/api/lookup', upload.single('file'), (req, res) => {
     console.log('Arquivo recebido:', req.file);
     console.log('Body:', req.body);
 
@@ -45,7 +51,7 @@ app.post('/lookup', upload.single('file'), (req, res) => {
             throw new Error('Nenhum arquivo enviado.');
         }
 
-        const filePath = path.join(__dirname, 'tmp/uploads', req.file.filename);
+        const filePath = path.join(uploadDir, req.file.filename);
         const searchValue = req.body.search_value.trim();
         const searchColumn = req.body.search_column.trim();
         const returnColumn = req.body.return_column.trim();
@@ -60,8 +66,8 @@ app.post('/lookup', upload.single('file'), (req, res) => {
 
         res.status(200).json({ results });
     } catch (error) {
-        console.error('Erro:', error.message);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Erro:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -71,7 +77,7 @@ app.get('/', (req, res) => {
 });
 
 // Inicia o servidor na porta desejada
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });
