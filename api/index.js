@@ -8,26 +8,38 @@ const fs = require('fs');
 const app = express();
 
 // Configuração do multer para o upload de arquivos
-const upload = multer({ dest: path.join(__dirname, 'tmp/uploads') });
+const upload = multer({ 
+    dest: path.join(__dirname, 'tmp/uploads'),
+    limits: { fileSize: 10 * 1024 * 1024 } // Limita o tamanho do arquivo a 10MB
+});
+
+// Middleware para lidar com JSON e URL encoded
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Função para realizar a busca PROCV
 function performLookup(filePath, searchValue, searchColumn, returnColumn) {
-    const workbook = XLSX.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    try {
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(sheet);
 
-    const parsedSearchValue = isNaN(searchValue) ? searchValue : Number(searchValue);
+        const parsedSearchValue = isNaN(searchValue) ? searchValue : Number(searchValue);
 
-    const results = data
-        .filter(row => {
-            const cellValue = row[searchColumn];
-            const parsedCellValue = isNaN(cellValue) ? cellValue : Number(cellValue);
-            return parsedCellValue === parsedSearchValue;
-        })
-        .map(row => `${searchColumn}: ${row[searchColumn]} ${returnColumn}: ${row[returnColumn] || 'Não encontrado'}`);
+        const results = data
+            .filter(row => {
+                const cellValue = row[searchColumn];
+                const parsedCellValue = isNaN(cellValue) ? cellValue : Number(cellValue);
+                return parsedCellValue === parsedSearchValue;
+            })
+            .map(row => `${searchColumn}: ${row[searchColumn]} ${returnColumn}: ${row[returnColumn] || 'Não encontrado'}`);
 
-    return results.length ? results : ['Não encontrado'];
+        return results.length ? results : ['Não encontrado'];
+    } catch (error) {
+        console.error('Erro ao processar o arquivo Excel:', error.message);
+        throw new Error('Erro ao processar o arquivo Excel');
+    }
 }
 
 // Função para enviar os resultados para a etiquetadora (essa função é um placeholder)
@@ -50,6 +62,15 @@ app.post('/lookup', upload.single('file'), (req, res) => {
         const searchColumn = req.body.search_column.trim();
         const returnColumn = req.body.return_column.trim();
 
+        if (!searchValue || !searchColumn || !returnColumn) {
+            throw new Error('Parâmetros de busca inválidos.');
+        }
+
+        console.log('Caminho do arquivo:', filePath);
+        console.log('Valor de busca:', searchValue);
+        console.log('Coluna de busca:', searchColumn);
+        console.log('Coluna de retorno:', returnColumn);
+
         const results = performLookup(filePath, searchValue, searchColumn, returnColumn);
 
         // Imprime os resultados
@@ -61,7 +82,7 @@ app.post('/lookup', upload.single('file'), (req, res) => {
         res.status(200).json({ results });
     } catch (error) {
         console.error('Erro:', error.message);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
