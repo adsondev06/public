@@ -7,9 +7,18 @@ const fs = require('fs');
 // Inicializa o servidor Express
 const app = express();
 
+// Caminho para a pasta de uploads
+const uploadDir = path.join(__dirname, 'tmp/uploads');
+
+// Cria a pasta de uploads se não existir
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log(`Pasta de uploads criada em: ${uploadDir}`);
+}
+
 // Configuração do multer para o upload de arquivos
 const upload = multer({ 
-    dest: path.join(__dirname, 'tmp/uploads'),
+    dest: uploadDir,
     limits: { fileSize: 10 * 1024 * 1024 } // Limita o tamanho do arquivo a 10MB
 });
 
@@ -57,7 +66,7 @@ app.post('/lookup', upload.single('file'), (req, res) => {
             throw new Error('Nenhum arquivo enviado.');
         }
 
-        const filePath = path.join(__dirname, 'tmp/uploads', req.file.filename);
+        const filePath = path.join(uploadDir, req.file.filename);
         const searchValue = req.body.search_value.trim();
         const searchColumn = req.body.search_column.trim();
         const returnColumn = req.body.return_column.trim();
@@ -92,7 +101,7 @@ app.get('/', (req, res) => {
 });
 
 // Inicia o servidor na porta desejada
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });

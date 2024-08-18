@@ -27,6 +27,7 @@ document.getElementById('lookup-form').addEventListener('submit', async (event) 
 
         resultElement.innerHTML = allResults.map(result => `<li>${result}</li>`).join('');
         
+        // Limpa os campos do formulário após o envio
         document.getElementById('file').value = '';
         document.getElementById('search_value').value = '';
         document.getElementById('search_column').value = '';
